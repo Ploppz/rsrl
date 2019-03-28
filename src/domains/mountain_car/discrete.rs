@@ -83,6 +83,10 @@ impl Domain for MountainCar {
             Observation::Full(s)
         }
     }
+    fn set_state(&mut self, state: Vector<f64>) {
+        self.x = state[0];
+        self.v = state[1];
+    }
 
     fn step(&mut self, action: usize) -> Transition<Vector<f64>, usize> {
         let from = self.emit();

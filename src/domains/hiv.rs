@@ -138,6 +138,9 @@ impl Domain for HIVTreatment {
             Observation::Full(s)
         }
     }
+    fn set_state(&mut self, state: Vector<f64>) {
+        self.state = state;
+    }
 
     fn step(&mut self, action: usize) -> Transition<Vector<f64>, usize> {
         let from = self.emit();

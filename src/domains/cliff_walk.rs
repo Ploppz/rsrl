@@ -47,6 +47,9 @@ impl Domain for CliffWalk {
             Observation::Full(self.loc)
         }
     }
+    fn set_state(&mut self, state: (usize, usize)) {
+        self.loc = state;
+    }
 
     fn step(&mut self, action: usize) -> Transition<(usize, usize), usize> {
         let from = self.emit();

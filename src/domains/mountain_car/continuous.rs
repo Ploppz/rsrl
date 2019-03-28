@@ -65,6 +65,10 @@ impl Domain for ContinuousMountainCar {
             Observation::Full(s)
         }
     }
+    fn set_state(&mut self, state: Vector<f64>) {
+        self.x = state[0];
+        self.v = state[1];
+    }
 
     fn step(&mut self, action: f64) -> Transition<Vector<f64>, f64> {
         let from = self.emit();

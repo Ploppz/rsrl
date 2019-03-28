@@ -132,6 +132,10 @@ pub trait Domain {
     /// Emit an observation of the current state of the environment.
     fn emit(&self) -> Observation<<Self::StateSpace as Space>::Value>;
 
+    /// Not meant to usually be used, but provided because it might be useful, for example if you
+    /// want to reproduce a certain sequence of state transitions (e.g. for rendering)
+    fn set_state(&mut self, state: <Self::StateSpace as Space>::Value);
+
     /// Transition the environment forward a single step given an action, `a`.
     fn step(
         &mut self,

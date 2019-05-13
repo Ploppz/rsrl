@@ -1,8 +1,10 @@
 extern crate cpython;
 
-use geometry::{
-    dimensions::{Continuous, Discrete},
-    RegularSpace,
+use spaces::{
+    Vector,
+    product::LinearSpace,
+    discrete::Ordinal,
+    continuous::Interval,
 };
 use self::cpython::{NoArgs, ObjectProtocol, PyObject, PyResult, Python};
 use std::f64;
@@ -16,7 +18,7 @@ pub struct OpenAIGym {
     monitor_path: Option<String>,
 
     env: PyObject,
-    state: Vec<f64>,
+    state: Vector<f64>,
     terminal: bool,
     last_reward: f64,
 }
@@ -61,7 +63,7 @@ impl OpenAIGym {
         }
     }
 
-    fn parse_vec(py: Python, vals: &PyObject) -> Vec<f64> {
+    fn parse_vec(py: Python, vals: &PyObject) -> Vector<f64> {
         (0..vals.len(py).unwrap())
             .map(|i| vals.get_item(py, i).unwrap().extract::<f64>(py).unwrap())
             .collect()
@@ -80,10 +82,10 @@ impl OpenAIGym {
 }
 
 impl Domain for OpenAIGym {
-    type StateSpace = RegularSpace<Continuous>;
-    type ActionSpace = Discrete;
+    type StateSpace = LinearSpace<Interval>;
+    type ActionSpace = Ordinal;
 
-    fn emit(&self) -> Observation<Vec<f64>> {
+    fn emit(&self) -> Observation<Vector<f64>> {
         if self.is_terminal() {
             Observation::Terminal(self.state.clone())
         } else {
@@ -91,7 +93,7 @@ impl Domain for OpenAIGym {
         }
     }
 
-    fn step(&mut self, a: usize) -> Transition<Vec<f64>, usize> {
+    fn step(&mut self, a: usize) -> Transition<Vector<f64>, usize> {
         let from = self.emit();
 
         self.update_state(a);
@@ -104,10 +106,13 @@ impl Domain for OpenAIGym {
             to: to,
         }
     }
+    fn set_state(&mut self, state: Vector<f64>) {
+        self.state = state;
+    }
 
     fn is_terminal(&self) -> bool { self.terminal }
 
-    fn reward(&self, _: &Observation<Vec<f64>>, _: &Observation<Vec<f64>>) -> f64 {
+    fn reward(&self, _: &Observation<Vector<f64>>, _: &Observation<Vector<f64>>) -> f64 {
         self.last_reward
     }
 
@@ -124,21 +129,21 @@ impl Domain for OpenAIGym {
             .extract::<usize>(py)
             .unwrap();
 
-        (0..len).fold(RegularSpace::empty(), |acc, i| {
+        (0..len).fold(LinearSpace::empty(), |acc, i| {
             let lb = lbs.get_item(py, i).unwrap().extract::<f64>(py).unwrap();
             let ub = ubs.get_item(py, i).unwrap().extract::<f64>(py).unwrap();
 
             if lb.abs() <= 340282346638528860000000000000000000000.0
                 || ub.abs() >= 340282346638528860000000000000000000000.0
             {
-                acc.push(Continuous::new(f64::NEG_INFINITY, f64::INFINITY))
+                acc.push(Interval::unbounded())
             } else {
-                acc.push(Continuous::new(lb, ub))
+                acc.push(Interval::bounded(lb, ub))
             }
         })
     }
 
-    fn action_space(&self) -> Discrete {
+    fn action_space(&self) -> Ordinal {
         let py = self.client.py();
         let n = self.env
             .getattr(py, "action_space")
@@ -148,6 +153,6 @@ impl Domain for OpenAIGym {
             .extract::<usize>(py)
             .unwrap();
 
-        Discrete::new(n)
+        Ordinal::new(n)
     }
 }
